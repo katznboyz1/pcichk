@@ -7,14 +7,14 @@ SUBJECT = 'PCI Differences Detected'
 
 if (LSPCI_OUTPUT_FOLDER not in os.listdir('.')):
     os.mkdir(LSPCI_OUTPUT_FOLDER)
-'''
+
 currentTime = datetime.datetime.utcnow().isoformat().replace(':', '_') # replaces the hour/minute/second colons with underscores to make it filename safe
 
 os.system('lspci -nn > {}/{}.lspcilog'.format(
     LSPCI_OUTPUT_FOLDER,
     currentTime
 )) == 0
-'''
+
 lspciPreviousOutputs = sorted(os.listdir(LSPCI_OUTPUT_FOLDER))
 
 if (len(lspciPreviousOutputs) >= 2):
@@ -90,4 +90,4 @@ if (len(lspciPreviousOutputs) >= 2):
 
         print(differences)
         
-        #os.system('cat ./lastdiff.txt | ssmtp {}'.format(MAILTO))
+        os.system('cat ./lastdiff.txt | ssmtp {}'.format(MAILTO))
