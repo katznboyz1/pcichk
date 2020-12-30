@@ -1,6 +1,7 @@
 import os, datetime, re, difflib
 
 LSPCI_OUTPUT_FOLDER = 'lspci-outputs'
+MAILTO = '' # user@domain
 
 if (LSPCI_OUTPUT_FOLDER not in os.listdir('.')):
     os.mkdir(LSPCI_OUTPUT_FOLDER)
@@ -76,3 +77,5 @@ if (len(lspciPreviousOutputs) >= 2):
         file = open('lastdiff.txt', 'w')
         file.write(differences)
         file.close()
+        
+        os.system('cat ./lastdiff.txt | sendmail -s "PCICHK Differences Report" {}'.format(MAILTO))
