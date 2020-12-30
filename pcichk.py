@@ -77,5 +77,7 @@ if (len(lspciPreviousOutputs) >= 2):
         file = open('lastdiff.txt', 'w')
         file.write(differences)
         file.close()
+
+        print(differences)
         
         os.system('cat ./lastdiff.txt | sendmail -s "PCICHK Differences Report" {}'.format(MAILTO))
