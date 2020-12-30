@@ -13,7 +13,7 @@ os.system('lspci -nn > {}/{}.lspcilog'.format(
     currentTime
 )) == 0
 
-lspciPreviousOutputs = os.listdir(LSPCI_OUTPUT_FOLDER)
+lspciPreviousOutputs = sorted(os.listdir(LSPCI_OUTPUT_FOLDER))
 
 if (len(lspciPreviousOutputs) >= 2):
     lspciPreviousOutput = str(open('{}/{}'.format(
