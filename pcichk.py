@@ -43,7 +43,7 @@ if (len(lspciPreviousOutputs) >= 2):
     for difference in lines:
 
         # i wrote these regex by hand so if they arent working for you, please raise an issue on the repo, as i am not too good with regex
-        lastIndexOfIommuGroup = re.search('[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F].[0-9a-fA-F] ', difference[0]).span()[1]
+        lastIndexOfIommuGroup = re.search('[0-9a-fA-F]{1,9}:[0-9a-fA-F]{1,9}.[0-9a-fA-F]{1,9} ', difference[0]).span()[1]
         indexOfBothEndsOfDeviceVendorIDPair = re.search(' \[[0-9a-fA-F]{4,8}:[0-9a-fA-F]{4,8}\]', difference[0]).span()
 
         name = difference[0][lastIndexOfIommuGroup:indexOfBothEndsOfDeviceVendorIDPair[0]]
