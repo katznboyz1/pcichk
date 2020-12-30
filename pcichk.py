@@ -82,7 +82,7 @@ if (len(lspciPreviousOutputs) >= 2):
             MAILTO,
             MAILFROM,
             SUBJECT,
-            len(differences.split('\n')) - 1
+            (len(differences.split('\n')) - 1) / 2
         ) + differences
         file = open('lastdiff.txt', 'w')
         file.write(differences)
