@@ -57,7 +57,7 @@ if (len(lspciPreviousOutputs) >= 2):
         actualDeviceName = name + ' ' + '[{}:{}]'.format(
             vendorDeviceIdPairs[0][:4],
             vendorDeviceIdPairs[1][:4]
-        ) + '\n\n' # double \n because that works better for emails
+        ) + '\n'
 
         # if the name difference is equal to a string of pluses that is equal to the length of the name, then this is a new device
         # ex:
@@ -82,7 +82,7 @@ if (len(lspciPreviousOutputs) >= 2):
             MAILTO,
             MAILFROM,
             SUBJECT,
-            (len(differences.split('\n')) - 1) / 2
+            len(differences.split('\n')) - 1
         ) + differences
         file = open('lastdiff.txt', 'w')
         file.write(differences)
