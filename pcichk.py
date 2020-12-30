@@ -54,7 +54,7 @@ if (len(lspciPreviousOutputs) >= 2):
 
         vendorDeviceIdPairs = vendorDeviceID.split('[')[1].split(']')[0].split(':') #[1234:5678] but in a list form like ['1234', '5678']
 
-        actualDeviceName = difference[0]
+        actualDeviceName = difference[0] + '\n' # double \n because that works better for emails
 
         # if the name difference is equal to a string of pluses that is equal to the length of the name, then this is a new device
         # ex:
