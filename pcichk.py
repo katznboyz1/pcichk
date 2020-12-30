@@ -1,4 +1,4 @@
-import os, datetime, re
+import os, datetime, re, difflib
 
 LSPCI_OUTPUT_FOLDER = 'lspci-outputs'
 
@@ -14,79 +14,65 @@ os.system('lspci -nn > {}/{}.lspcilog'.format(
 '''
 lspciPreviousOutputs = os.listdir(LSPCI_OUTPUT_FOLDER)
 
-def parseLspciOutputFile(logName) -> list: # [DEVICE_NAMES, VENDOR_DEVICE_IDS]
-    logFile = str(open('{}/{}'.format(
-        LSPCI_OUTPUT_FOLDER,
-        logName
-    )).read())
-
-    # both of these lists will be the same length, with the same indexes for each line
-    listOfDeviceNames = []
-    listOfVendorDeviceIDs = []
-
-    for line in logFile.split('\n'):
-
-        # im not great with regex so hopefully this works
-        indexOfStartOfDeviceName = 0 #re.search('[0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f].[0-9A-Fa-f] ', line).span()[1]
-        indexOfVendorDeviceIDs = re.search('\[[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]:[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]\]', line)
-
-        listOfDeviceNames.append(line[indexOfStartOfDeviceName:indexOfVendorDeviceIDs.span()[0]])
-        listOfVendorDeviceIDs.append(line[indexOfVendorDeviceIDs.span()[0]:indexOfVendorDeviceIDs.span()[1]])
-    
-    return [
-        listOfDeviceNames, 
-        listOfVendorDeviceIDs
-    ]
-
 if (len(lspciPreviousOutputs) >= 2):
+    lspciPreviousOutput = str(open('{}/{}'.format(
+        LSPCI_OUTPUT_FOLDER,
+        lspciPreviousOutputs[-2]
+    )).read())
+    lspciCurrentOutput = str(open('{}/{}'.format(
+        LSPCI_OUTPUT_FOLDER,
+        lspciPreviousOutputs[-1]
+    )).read())
+    
+    differenceBetweenTwoFiles = difflib.ndiff(lspciPreviousOutput, lspciCurrentOutput)
 
-    # [DIFFERENCE_TYPE, DEVICE_NAME, VENDOR_DEVICE_ID]
-    # DIFFERENCE_TYPE:
-    #   0 = new device
-    #   1 = missing device
-    #   2 = same device with a different vendor:device id
-    differences = []
+    lines = []
+    line = ['', ''] # [character, difference, actual line]
+    for characterDiffPair in differenceBetweenTwoFiles:
+        line[0] += characterDiffPair[-1]
+        line[1] += characterDiffPair[0]
+        if (characterDiffPair[-1] == '\n'):
+            lines.append(line)
+            line = ['', '']
+    
+    differences = ''
 
-    currentOutput = parseLspciOutputFile(lspciPreviousOutputs[-1])
-    previousOutput = parseLspciOutputFile(lspciPreviousOutputs[-2])
+    for difference in lines:
 
-    # loop through the previous and current device ids/names and check if they are equal
-    # if name is the same, but the id is different, assume that the device is the same and DIFFERENCE_TYPE is 2
-    # if the name and vendor id are different, assume that DIFFERENCE_TYPE is 0 (and decrease the current device count, since there was no existing card in that index before)
-    # if the current card/current id are not in the previous output, then the card is new
+        # i wrote these regex by hand so if they arent working for you, please raise an issue on the repo, as i am not too good with regex
+        lastIndexOfIommuGroup = re.search('[0-9a-fA-F][0-9a-fA-F]:[0-9a-fA-F][0-9a-fA-F].[0-9a-fA-F] ', difference[0]).span()[1]
+        indexOfBothEndsOfDeviceVendorIDPair = re.search(' \[[0-9a-fA-F]{4,8}:[0-9a-fA-F]{4,8}\]', difference[0]).span()
 
-    previousDevice = 0
-    for currentDevice in range(len(previousOutput[1])):
-        try:
-            deviceNameIsEqual = previousOutput[0][previousDevice] == currentOutput[0][currentDevice]
-            deviceIdIsEqual = previousOutput[1][previousDevice] == currentOutput[1][currentDevice]
+        name = difference[0][lastIndexOfIommuGroup:indexOfBothEndsOfDeviceVendorIDPair[0]]
+        nameDifference = difference[1][lastIndexOfIommuGroup:indexOfBothEndsOfDeviceVendorIDPair[0]]
 
-            if (deviceNameIsEqual and not deviceIdIsEqual):
-                differences.append([
-                    2,
-                    currentOutput[0][currentDevice],
-                    currentOutput[1][currentDevice]
-                ]) # device is same but with a different vendor:device id
+        vendorDeviceID = difference[0][indexOfBothEndsOfDeviceVendorIDPair[0]:indexOfBothEndsOfDeviceVendorIDPair[1]][1:] # [1:] since the regex returns a space at the beginning of the line, so this gets rid of it
+        vendorDeviceIdDifference = difference[1][indexOfBothEndsOfDeviceVendorIDPair[0]:indexOfBothEndsOfDeviceVendorIDPair[1]][1:]
 
-            elif (currentOutput[0][currentDevice] not in previousOutput[0] or currentOutput[1][currentDevice] not in previousOutput[1]):
-                differences.append([
-                    0,
-                    currentOutput[0][currentDevice],
-                    currentOutput[1][currentDevice]
-                ]) # device is new
-                previousDevice -= 1
+        vendorDeviceIdPairs = vendorDeviceID.split('[')[1].split(']')[0].split(':') #[1234:5678] but in a list form like ['1234', '5678']
 
-            elif (previousOutput[0][currentDevice] not in currentOutput[0] or previousOutput[1][currentDevice] not in currentOutput[1]):
-                differences.append([
-                    1,
-                    previousOutput[0][previousDevice],
-                    previousOutput[1][previousDevice]
-                ]) # device is missing
-                previousDevice -= 1
+        actualDeviceName = difference[0]
 
-        except IndexError:
-            pass
+        # if the name difference is equal to a string of pluses that is equal to the length of the name, then this is a new device
+        # ex:
+        # name = "ijkhasfgdldkjhdsfg"
+        # nameDifference = "++++++++++++++++++"
+        # this would mean that name is new since the entire phrase was added
+        if (nameDifference == '+' * len(name)):
+            differences += ('NEW DEVICE: ' + actualDeviceName)
+        
+        # if the name difference is equal to a string of minuses that is equal to the length of the name, then this device was removed
+        # this follows the same logic as the new device comparison, only with minuses instead of pluses
+        elif (nameDifference == '-' * len(name)):
+            differences += ('MISSING DEVICE: ' + actualDeviceName)
+        
+        # since the vendor device ids are 4 characters long, its safe to assume that a vendor device id that has a length of greater than 4 has a new id
+        # this is because it would contain the old id "1234" plus the new id "5678" thus forming the string "12345678" together
+        elif (len(vendorDeviceIdPairs[0]) > 4 or len(vendorDeviceIdPairs[1]) > 4):
+            differences += ('SAME DEVICE BUT DIFFERENT ID: ' + actualDeviceName)
 
-    output = ''
-    for difference in differences:
-        print(difference)
+    if (len(differences) > 0):
+        differences = 'Found {} PCI differences:\n'.format(len(differences.split('\n')) - 1) + differences
+        file = open('lastdiff.txt', 'w')
+        file.write(differences)
+        file.close()
