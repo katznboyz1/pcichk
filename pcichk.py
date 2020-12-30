@@ -7,14 +7,14 @@ SUBJECT = 'PCI Differences Detected'
 
 if (LSPCI_OUTPUT_FOLDER not in os.listdir('.')):
     os.mkdir(LSPCI_OUTPUT_FOLDER)
-
+'''
 currentTime = datetime.datetime.utcnow().isoformat().replace(':', '_') # replaces the hour/minute/second colons with underscores to make it filename safe
 
 os.system('lspci -nn > {}/{}.lspcilog'.format(
     LSPCI_OUTPUT_FOLDER,
     currentTime
 )) == 0
-
+'''
 lspciPreviousOutputs = sorted(os.listdir(LSPCI_OUTPUT_FOLDER))
 
 if (len(lspciPreviousOutputs) >= 2):
@@ -54,7 +54,10 @@ if (len(lspciPreviousOutputs) >= 2):
 
         vendorDeviceIdPairs = vendorDeviceID.split('[')[1].split(']')[0].split(':') #[1234:5678] but in a list form like ['1234', '5678']
 
-        actualDeviceName = difference[0] + '\n' # double \n because that works better for emails
+        actualDeviceName = name + ' ' + '[{}:{}]'.format(
+            vendorDeviceIdPairs[0][:4],
+            vendorDeviceIdPairs[1][:4]
+        ) + '\n\n' # double \n because that works better for emails
 
         # if the name difference is equal to a string of pluses that is equal to the length of the name, then this is a new device
         # ex:
@@ -87,4 +90,4 @@ if (len(lspciPreviousOutputs) >= 2):
 
         print(differences)
         
-        os.system('cat ./lastdiff.txt | ssmtp {}'.format(MAILTO))
+        #os.system('cat ./lastdiff.txt | ssmtp {}'.format(MAILTO))
