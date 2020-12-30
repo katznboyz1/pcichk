@@ -5,14 +5,14 @@ MAILTO = '' # user@domain
 
 if (LSPCI_OUTPUT_FOLDER not in os.listdir('.')):
     os.mkdir(LSPCI_OUTPUT_FOLDER)
-'''
+
 currentTime = datetime.datetime.utcnow().isoformat().replace(':', '_') # replaces the hour/minute/second colons with underscores to make it filename safe
 
 os.system('lspci -nn > {}/{}.lspcilog'.format(
     LSPCI_OUTPUT_FOLDER,
     currentTime
 )) == 0
-'''
+
 lspciPreviousOutputs = os.listdir(LSPCI_OUTPUT_FOLDER)
 
 if (len(lspciPreviousOutputs) >= 2):
