@@ -2,6 +2,8 @@ import os, datetime, re, difflib
 
 LSPCI_OUTPUT_FOLDER = 'lspci-outputs'
 MAILTO = '' # user@domain
+MAILFROM = 'Unnamed Linux Server'
+SUBJECT = 'PCI Differences Detected'
 
 if (LSPCI_OUTPUT_FOLDER not in os.listdir('.')):
     os.mkdir(LSPCI_OUTPUT_FOLDER)
@@ -73,11 +75,16 @@ if (len(lspciPreviousOutputs) >= 2):
             differences += ('SAME DEVICE BUT DIFFERENT ID: ' + actualDeviceName)
 
     if (len(differences) > 0):
-        differences = 'Found {} PCI differences:\n'.format(len(differences.split('\n')) - 1) + differences
+        differences = 'To: {}\nFrom: {}\nSubject: {}\nFound {} PCI differences:\n'.format(
+            MAILTO,
+            MAILFROM,
+            SUBJECT,
+            len(differences.split('\n')) - 1
+        ) + differences
         file = open('lastdiff.txt', 'w')
         file.write(differences)
         file.close()
 
         print(differences)
         
-        os.system('cat ./lastdiff.txt | sendmail -s "PCICHK Differences Report" {}'.format(MAILTO))
+        os.system('cat ./lastdiff.txt | ssmtp {}'.format(MAILTO))
